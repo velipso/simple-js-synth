@@ -12,9 +12,8 @@ function SimpleJSSynth(dest, opts){
 	//   osc1vol : 0 to 1,                                         // oscillator volume (linear)
 	//   osc1tune: 0,                                              // relative tuning (semitones)
 	//   osc2type, osc2vol, osc2tune, osc3type, osc3vol, osc3tune, // same as `osc1___` values
-	//   pan     : -1 (left) to 1 (right),                         // overall panning
-	//   attack  : 0 to 1,                                         // attack time (seconds)
-	//   decay   : 0 to 1,                                         // decay time (seconds)
+	//   attack  : 0 to inf,                                       // attack time (seconds)
+	//   decay   : 0 to inf,                                       // decay time (seconds)
 	//   sustain : 0 to 1                                          // sustain (fraction of max vol)
 	// }
 
@@ -23,18 +22,14 @@ function SimpleJSSynth(dest, opts){
 	//
 	//   Osc1 ---> Osc1 Gain ---+
 	//                          |
-	//   Osc2 ---> Osc2 Gain ---+---> Envelope Gain ---> Stereo Pan ---> Destination
+	//   Osc2 ---> Osc2 Gain ---+---> Envelope Gain ---> Destination
 	//                          |
 	//   Osc3 ---> Osc3 Gain ---+
 	//
 
-	var my = ctx.createStereoPanner();
-	my.pan.value = opts.pan || 0;
-	my.connect(dest);
-
 	var gain = ctx.createGain();
 	gain.gain.setValueAtTime(0, ctx.currentTime);
-	gain.connect(my);
+	gain.connect(dest);
 
 	function oscgain(v, def){
 		var g = ctx.createGain();
@@ -70,6 +65,15 @@ function SimpleJSSynth(dest, opts){
 	var decay   = typeof opts.decay   == 'number' ? opts.decay   : 0.2;
 	var sustain = typeof opts.sustain == 'number' ? opts.sustain : 0.5;
 
+	// clamp the values a bit
+	var eps = 0.001;
+	if (attack < eps)
+		attack = eps;
+	if (decay < eps)
+		decay = eps;
+	if (sustain < eps)
+		sustain = eps;
+
 	var basefreq = 0;
 	var silent = 0;
 
@@ -77,8 +81,8 @@ function SimpleJSSynth(dest, opts){
 	osc2.start();
 	osc3.start();
 
-	my.noteOn = function(freq, vol){
-		my.stop();
+	gain.noteOn = function(freq, vol){
+		gain.stop();
 		basefreq = freq;
 		var now = ctx.currentTime;
 		osc1.frequency.setValueAtTime(freq * tune1, now);
@@ -95,7 +99,7 @@ function SimpleJSSynth(dest, opts){
 		silent = -1;
 	};
 
-	my.bend = function(semitones){
+	gain.bend = function(semitones){
 		var b = basefreq * Math.pow(2, semitones / 12);
 		var now = ctx.currentTime;
 		osc1.frequency.setTargetAtTime(b * tune1, now, 0.1);
@@ -103,7 +107,7 @@ function SimpleJSSynth(dest, opts){
 		osc3.frequency.setTargetAtTime(b * tune3, now, 0.1);
 	};
 
-	my.noteOff = function(){
+	gain.noteOff = function(){
 		var now = ctx.currentTime;
 		var v = gain.gain.value;
 		gain.gain.cancelScheduledValues(now);
@@ -112,11 +116,11 @@ function SimpleJSSynth(dest, opts){
 		gain.gain.linearRampToValueAtTime(0.000001, silent);
 	};
 
-	my.isSilent = function(){
+	gain.isSilent = function(){
 		return silent >= 0 && ctx.currentTime >= silent;
 	};
 
-	my.stop = function(){
+	gain.stop = function(){
 		var now = ctx.currentTime;
 		osc1gain.node.gain.setValueAtTime(0.000001, now);
 		osc2gain.node.gain.setValueAtTime(0.000001, now);
@@ -124,7 +128,7 @@ function SimpleJSSynth(dest, opts){
 		silent = 0;
 	};
 
-	return my;
+	return gain;
 }
 
 if (typeof window !== 'undefined')

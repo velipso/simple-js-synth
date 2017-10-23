@@ -7,33 +7,174 @@ Project Home: https://github.com/voidqk/simple-js-synth
 -->
 <head>
 	<title>Simple JS Synth [demo]</title>
-	<style>html, body { font-family: sans-serif; }</style>
+	<style>
+html, body { font-family: sans-serif; }
+table {
+	border-collapse: collapse;
+	border: 1px solid #222;
+}
+th, td {
+	padding: 5px;
+	border: 1px solid #777;
+	text-align: center;
+}
+pre {
+	text-align: left;
+	margin: 0 10px;
+}
+	</style>
 	<script src="./simple-js-synth.js"></script>
 </head>
 <body>
+	<table>
+		<tbody>
+			<tr>
+				<th>Oscillator</th>
+				<th>Type</th>
+				<th>Volume</th>
+				<th>Tune</th>
+				<td rowspan="8"><pre id="raw"></pre></td>
+			</tr>
+			<tr>
+				<td>1</td>
+				<td><select id="osc1type">
+					<option value="sine">sine</option>
+					<option value="square">square</option>
+					<option value="triangle">triangle</option>
+					<option value="sawtooth">sawtooth</option>
+				</select></td>
+				<td>0 <input type="range" min="0" max="100" value="20" id="osc1vol" /> 1</td>
+				<td>-12 <input type="range" min="-120" max="120" value="0" id="osc1tune" /> +12</td>
+			</tr>
+			<tr>
+				<td>2</td>
+				<td><select id="osc2type">
+					<option value="sine">sine</option>
+					<option value="square" selected="selected">square</option>
+					<option value="triangle">triangle</option>
+					<option value="sawtooth">sawtooth</option>
+				</select></td>
+				<td>0 <input type="range" min="0" max="100" value="10" id="osc2vol" /> 1</td>
+				<td>-12 <input type="range" min="-120" max="120" value="120" id="osc2tune" /> +12</td>
+			</tr>
+			<tr>
+				<td>3</td>
+				<td><select id="osc3type">
+					<option value="sine">sine</option>
+					<option value="square">square</option>
+					<option value="triangle">triangle</option>
+					<option value="sawtooth">sawtooth</option>
+				</select></td>
+				<td>0 <input type="range" min="0" max="100" value="5" id="osc3vol" /> 1</td>
+				<td>-12 <input type="range" min="-120" max="120" value="-120" id="osc3tune" /> +12</td>
+			</tr>
+			<tr>
+				<th colspan="4">Envelope</th>
+			</tr>
+			<tr>
+				<th colspan="2">Attack</th>
+				<td colspan="2">0 <input type="range" min="0" max="500" value="0" id="attack" /> 5</td>
+			</tr>
+			<tr>
+				<th colspan="2">Decay</th>
+				<td colspan="2">0 <input type="range" min="0" max="500" value="30" id="decay" /> 5</td>
+			</tr>
+			<tr>
+				<th colspan="2">Sustain</th>
+				<td colspan="2">0 <input type="range" min="0" max="100" value="50" id="sustain" /> 1</td>
+			</tr>
+		</tbody>
+	</table>
+	<br />
 	<script>
 
 var AudioContext = window.AudioContext || window.webkitAudioContext;
 var actx = new AudioContext();
 
-var pool = [];
+// store the global bend amount for future notes to play at
 var globalbend = 0;
-for (var i = 0; i < 20; i++){
-	pool.push(SimpleJSSynth(actx.destination, {
-		osc1type: 'square'  , osc1vol: 0.3, osc1tune: 0,
-		osc2type: 'triangle', osc2vol: 0.2, osc2tune: 0,
-		osc3type: 'sine'    , osc3vol: 0.1, osc3tune: 12,
-		pan: 0,
-		attack: 0.002,
-		decay: 0.2,
-		sustain: 0.5
-	}));
+
+// create a pool of monophonic synths to turn it into polyphonic
+var pool = [];
+
+// store our options to detect changes
+var lastopts = null;
+
+function reload(){
+	// create our options object based on the form
+	function osctype(id){
+		var sel = document.getElementById('osc' + id + 'type');
+		return sel.options[sel.selectedIndex].value;
+	}
+	function getnum(id, base){
+		return parseFloat(document.getElementById(id).value) / base;
+	}
+	var opts = {
+		osc1type: osctype(1),
+		osc1vol : getnum('osc1vol', 100),
+		osc1tune: getnum('osc1tune', 10),
+		osc2type: osctype(2),
+		osc2vol : getnum('osc2vol', 100),
+		osc2tune: getnum('osc2tune', 10),
+		osc3type: osctype(3),
+		osc3vol : getnum('osc3vol', 100),
+		osc3tune: getnum('osc3tune', 10),
+		attack  : getnum('attack', 100),
+		decay   : getnum('decay', 100),
+		sustain : getnum('sustain', 100)
+	};
+
+	// if it hasn't changed from before, then return
+	if (lastopts !== null &&
+		lastopts.osc1type === opts.osc1type &&
+		lastopts.osc1vol  === opts.osc1vol  &&
+		lastopts.osc1tune === opts.osc1tune &&
+		lastopts.osc2type === opts.osc2type &&
+		lastopts.osc2vol  === opts.osc2vol  &&
+		lastopts.osc2tune === opts.osc2tune &&
+		lastopts.osc3type === opts.osc3type &&
+		lastopts.osc3vol  === opts.osc3vol  &&
+		lastopts.osc3tune === opts.osc3tune &&
+		lastopts.attack   === opts.attack   &&
+		lastopts.decay    === opts.decay    &&
+		lastopts.sustain  === opts.sustain)
+		return;
+
+	document.getElementById('raw').innerHTML = JSON.stringify(opts, null, 3);
+
+	// flush the pool
+	while (pool.length > 0){
+		var s = pool.pop();
+		s.stop();
+		s.disconnect();
+	}
+
+	// recreate the pool based on the new options
+	for (var i = 0; i < 20; i++)
+		pool.push(SimpleJSSynth(actx.destination, opts));
+
+	// save the options for later comparison
+	lastopts = opts;
 }
 
+reload();
+
+// attach update events to reload
+(['osc1type', 'osc1vol', 'osc1tune', 'osc2type', 'osc2vol', 'osc2tune', 'osc3type', 'osc3vol',
+	'osc3tune', 'attack', 'decay', 'sustain']).forEach(function(id){
+	document.getElementById(id).addEventListener('change', reload);
+});
+
+// check our options every 200ms
+setInterval(reload, 200);
+
+// fired when a note is hit, either via the UI, or via MIDI
 function notehit(freq, vol){
 	var p = -1;
 	for (p = 0; p < pool.length; p++){
+		// search the pool of synths for a silent synth
 		if (pool[p].isSilent()){
+			// trigger the synth and return an object for manipulating it
 			pool[p].noteOn(freq, vol);
 			return {
 				off: function(){
@@ -50,37 +191,50 @@ function notehit(freq, vol){
 			};
 		}
 	}
+	// no synths available, so don't do anything, and return a junk object
 	return {
 		off: function(){},
 		bend: function(){}
 	};
 }
 
+// track which notes are currently playing
 var mididown = [];
 for (var i = 0; i < 128; i++)
 	mididown.push(false);
+
+// called when a note is hit or released via UI or MIDI
 function midihit(note, vel, down){
+	// silence the note
 	if (mididown[note]){
 		mididown[note].off();
 		mididown[note] = false;
 	}
+	// if we're pressing down, play the note
 	if (down){
 		mididown[note] = notehit(440 * Math.pow(2, (note - 69) / 12), vel / 127);
+		// if we have a global bend, apply it immediately
 		if (globalbend != 0)
 			mididown[note].bend(globalbend);
 	}
-	if (note >= 60 && note <= 71)
-		divs[note - 60].style.background = down ? '#aaf' : '#eef';
+	// if the note is in the range of the UI, then color the appropriate div
+	if (note >= 36 && note < 84)
+		divs[note - 36].style.background = down ? '#aaf' : '#eef';
 }
 
+// called when MIDI sends a bend message
 function midibend(amt){
+	// set the global bend of +-2 semitones
 	globalbend = amt * 2;
+
+	// scan all playing notes and bend them accordingly
 	for (var i = 0; i < 128; i++){
 		if (mididown[i])
 			mididown[i].bend(globalbend);
 	}
 }
 
+// called when MIDI has initialized
 function midiinit(midi){
 	function midihook(){
 		var inputs = midi.inputs.values();
@@ -91,12 +245,16 @@ function midiinit(midi){
 	midi.onstatechange = midihook;
 }
 
+// called when MIDI fails to initialize... don't do anything
 function midirej(){
+	console.warn('MIDI failed to initialize... oh well');
 }
 
+// called when a MIDI message is received
 function midiev(ev){
 	if (ev.data.length < 2)
 		return;
+	// look for note on, note off, and pitch bend messages
 	if ((ev.data[0] & 0xF0) == 0x90)
 		midihit(ev.data[1], ev.data[2], true);
 	else if ((ev.data[0] & 0xF0) == 0x80)
@@ -109,12 +267,17 @@ function midiev(ev){
 	}
 }
 
+// request MIDI access
 if (navigator.requestMIDIAccess)
 	navigator.requestMIDIAccess().then(midiinit, midirej);
 
+// create our 48 divs for the user to click
 var divs = [];
-for (var i = 0; i < 12; i++){
+for (var i = 0; i < 48; i++){
+	if (i == 12 || i == 24 || i == 36)
+		document.body.appendChild(document.createElement('br'));
 	(function(div, i){
+		// create the DIV
 		divs.push(div);
 		div.style.display = 'inline-block';
 		div.style.margin = '1px';
@@ -123,40 +286,32 @@ for (var i = 0; i < 12; i++){
 		div.style.cursor = 'default';
 		div.style.backgroundColor = '#eef';
 		div.appendChild(document.createTextNode(
-			(['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'])[i]));
+			(['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'])[i % 12] +
+			(Math.floor(i / 12) + 2)));
 		document.body.appendChild(div);
-		var notedone = function(){};
-		function ondown(){
-			div.style.backgroundColor = '#bbf';
-			var freq = 440 * Math.pow(2, (i - 9) / 12);
-			notedone = notehit(freq, 0.8);
+
+		// hook mouse events to the DIV
+		function cancel(e){
+			e.preventDefault();
+			e.stopPropagation();
+			return false;
 		}
-		function onup(){
-			div.style.backgroundColor = '#eef';
-			notedone.off();
+		function mousedown(e){
+			// if the mouse is pressed, simulate a MIDI note on
+			midihit(36 + i, 100, true);
+			return cancel(e);
 		}
 		function mouseup(e){
-			e.preventDefault();
-			e.stopPropagation();
-			onup();
-			return false;
+			// if the mouse is released, simulate a MIDI note off
+			midihit(36 + i, 0, false);
+			return cancel(e);
 		}
-		div.addEventListener('mousedown', function(e){
-			e.preventDefault();
-			e.stopPropagation();
-			ondown();
-			return false;
-		});
-		div.addEventListener('mousemove', function(e){
-			e.preventDefault();
-			e.stopPropagation();
-			return false;
-		});
+		div.addEventListener('mousemove', cancel);
+		div.addEventListener('mousedown', mousedown);
 		div.addEventListener('mouseup', mouseup);
 		div.addEventListener('mouseout', mouseup);
 	})(document.createElement('div'), i);
 }
-
 	</script>
 </body>
 </html>
