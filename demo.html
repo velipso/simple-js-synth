@@ -11,7 +11,6 @@ Project Home: https://github.com/voidqk/simple-js-synth
 html, body { font-family: sans-serif; }
 table {
 	border-collapse: collapse;
-	border: 1px solid #222;
 }
 th, td {
 	padding: 5px;
@@ -24,7 +23,8 @@ pre {
 }
 #osc1vol , #osc2vol , #osc3vol  { width: 120px; }
 #osc1tune, #osc2tune, #osc3tune { width: 280px; }
-#attack  , #decay   , #sustain  { width: 550px; }
+#attack  , #decay   , #sustain  { width: 500px; }
+#cutoff                         { width: 400px; }
 	</style>
 	<script src="./simple-js-synth.js"></script>
 </head>
@@ -36,7 +36,7 @@ pre {
 				<th>Type</th>
 				<th>Volume</th>
 				<th>Tune</th>
-				<td rowspan="8"><pre id="raw"></pre></td>
+				<td rowspan="11"><pre id="raw"></pre></td>
 			</tr>
 			<tr>
 				<td>1</td>
@@ -72,7 +72,7 @@ pre {
 				<td>-12 <input type="range" min="-120" max="120" value="-120" id="osc3tune" /> +12</td>
 			</tr>
 			<tr>
-				<th colspan="4">Envelope</th>
+				<th colspan="4" style="border-top: 2px solid #777;">Envelope</th>
 			</tr>
 			<tr>
 				<th>Attack</th>
@@ -85,6 +85,14 @@ pre {
 			<tr>
 				<th>Sustain</th>
 				<td colspan="3">0 <input type="range" min="0" max="100" value="50" id="sustain" /> 1</td>
+			</tr>
+			<tr style="border-top: 2px solid #777;">
+				<th id="cutoff_txt">Cutoff</th>
+				<td><select id="filter">
+					<option value="1">Enable</option>
+					<option value="0">Disable</option>
+				</select></td>
+				<td colspan="2">-12 <input type="range" min="-120" max="360" value="360" id="cutoff" /> +36</td>
 			</tr>
 		</tbody>
 	</table>
@@ -113,6 +121,7 @@ function reload(){
 	function getnum(id, base){
 		return parseFloat(document.getElementById(id).value) / base;
 	}
+	var docutoff = document.getElementById('filter').selectedIndex == 0;
 	var opts = {
 		osc1type: osctype(1),
 		osc1vol : getnum('osc1vol', 100),
@@ -125,7 +134,8 @@ function reload(){
 		osc3tune: getnum('osc3tune', 10),
 		attack  : getnum('attack', 100),
 		decay   : getnum('decay', 100),
-		sustain : getnum('sustain', 100)
+		sustain : getnum('sustain', 100),
+		cutoff  : docutoff ? getnum('cutoff', 10) : 1000
 	};
 
 	// if our options haven't changed from before, then return immediately
@@ -141,11 +151,16 @@ function reload(){
 		lastopts.osc3tune === opts.osc3tune &&
 		lastopts.attack   === opts.attack   &&
 		lastopts.decay    === opts.decay    &&
-		lastopts.sustain  === opts.sustain)
+		lastopts.sustain  === opts.sustain  &&
+		lastopts.cutoff   === opts.cutoff)
 		return;
 
 	// output JSON object to UI
 	document.getElementById('raw').innerHTML = JSON.stringify(opts, null, 3);
+
+	// change UI to reflect whether cutoff is enabled
+	document.getElementById('cutoff_txt').style.color = docutoff ? '#000' : '#999';
+	document.getElementById('cutoff').disabled = !docutoff;
 
 	// destroy all synths currently in the pool
 	while (pool.length > 0)
@@ -161,7 +176,7 @@ function reload(){
 
 // attach update events to reload
 (['osc1type', 'osc1vol', 'osc1tune', 'osc2type', 'osc2vol', 'osc2tune', 'osc3type', 'osc3vol',
-	'osc3tune', 'attack', 'decay', 'sustain']).forEach(function(id){
+	'osc3tune', 'attack', 'decay', 'sustain', 'filter', 'cutoff']).forEach(function(id){
 	document.getElementById(id).addEventListener('change', reload);
 });
 

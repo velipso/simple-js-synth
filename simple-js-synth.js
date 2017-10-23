@@ -8,13 +8,15 @@ function SimpleJSSynth(dest, opts){
 	// `dest` is the AudioNode destination
 	// `opts` is an object; see notes further down for meaning and range of values.
 	// {
-	//   osc1type: 'sine' | 'square' | 'sawtooth' | 'triangle',    // type of wave
-	//   osc1vol : 0 to 1,                                         // oscillator volume (linear)
-	//   osc1tune: 0,                                              // relative tuning (semitones)
-	//   osc2type, osc2vol, osc2tune, osc3type, osc3vol, osc3tune, // same as `osc1___` values
-	//   attack  : 0 to inf,                                       // attack time (seconds)
-	//   decay   : 0 to inf,                                       // decay time (seconds)
-	//   sustain : 0 to 1                                          // sustain (fraction of max vol)
+	//   osc1type : 'sine'|'square'|'sawtooth'|'triangle', // type of wave
+	//   osc1vol  : 0 to 1,                                // oscillator volume (linear)
+	//   osc1tune : 0,                                     // relative tuning (semitones)
+	//   osc2type, osc2vol, osc2tune,                      // settings for osc2
+	//   osc3type, osc3vol, osc3tune,                      // settings for osc3
+	//   attack   : 0 to inf,                              // attack time (seconds)
+	//   decay    : 0 to inf,                              // decay time (seconds)
+	//   sustain  : 0 to 1,                                // sustain (fraction of max vol)
+	//   cutoff   : -inf to inf                            // filter cutoff (relative semitones)
 	// }
 
 	var ctx = dest.context; // get the WebAudio context
@@ -22,14 +24,21 @@ function SimpleJSSynth(dest, opts){
 	//
 	//   Osc1 ---> Osc1 Gain ---+
 	//                          |
-	//   Osc2 ---> Osc2 Gain ---+---> Envelope Gain ---> Destination
+	//   Osc2 ---> Osc2 Gain ---+---> Envelope Gain ---> Filter --> Destination
 	//                          |
 	//   Osc3 ---> Osc3 Gain ---+
 	//
 
+	var filter = ctx.createBiquadFilter();
+	filter.type = 'lowpass';
+	filter.frequency.setValueAtTime(22050, ctx.currentTime);
+	filter.Q.setValueAtTime(0.5, ctx.currentTime);
+
+	var my = filter; // the returned object is the filter
+
 	var gain = ctx.createGain();
 	gain.gain.setValueAtTime(0, ctx.currentTime);
-	gain.connect(dest);
+	gain.connect(filter);
 
 	function oscgain(v, def){
 		var g = ctx.createGain();
@@ -60,6 +69,7 @@ function SimpleJSSynth(dest, opts){
 	var tune1 = calctune(opts.osc1tune);
 	var tune2 = calctune(opts.osc2tune);
 	var tune3 = calctune(opts.osc3tune);
+	var cutoff = calctune(opts.cutoff);
 
 	var attack  = typeof opts.attack  == 'number' ? opts.attack  : 0.1;
 	var decay   = typeof opts.decay   == 'number' ? opts.decay   : 0.2;
@@ -81,13 +91,16 @@ function SimpleJSSynth(dest, opts){
 	osc2.start();
 	osc3.start();
 
-	gain.noteOn = function(freq, vol){
-		gain.stop();
+	my.connect(dest);
+
+	my.noteOn = function(freq, vol){
+		my.stop();
 		basefreq = freq;
 		var now = ctx.currentTime;
 		osc1.frequency.setValueAtTime(freq * tune1, now);
 		osc2.frequency.setValueAtTime(freq * tune2, now);
 		osc3.frequency.setValueAtTime(freq * tune3, now);
+		filter.frequency.setValueAtTime(Math.min(freq * cutoff, 22050), now);
 		osc1gain.node.gain.setValueAtTime(vol * osc1gain.base, now);
 		osc2gain.node.gain.setValueAtTime(vol * osc2gain.base, now);
 		osc3gain.node.gain.setValueAtTime(vol * osc3gain.base, now);
@@ -99,7 +112,7 @@ function SimpleJSSynth(dest, opts){
 		silent = -1;
 	};
 
-	gain.bend = function(semitones){
+	my.bend = function(semitones){
 		var b = basefreq * Math.pow(2, semitones / 12);
 		var now = ctx.currentTime;
 		osc1.frequency.setTargetAtTime(b * tune1, now, 0.1);
@@ -107,7 +120,7 @@ function SimpleJSSynth(dest, opts){
 		osc3.frequency.setTargetAtTime(b * tune3, now, 0.1);
 	};
 
-	gain.noteOff = function(){
+	my.noteOff = function(){
 		var now = ctx.currentTime;
 		var v = gain.gain.value;
 		gain.gain.cancelScheduledValues(now);
@@ -116,11 +129,11 @@ function SimpleJSSynth(dest, opts){
 		gain.gain.linearRampToValueAtTime(0.000001, silent);
 	};
 
-	gain.isSilent = function(){
+	my.isSilent = function(){
 		return silent >= 0 && ctx.currentTime >= silent;
 	};
 
-	gain.stop = function(){
+	my.stop = function(){
 		var now = ctx.currentTime;
 		osc1gain.node.gain.setValueAtTime(0.000001, now);
 		osc2gain.node.gain.setValueAtTime(0.000001, now);
@@ -128,14 +141,14 @@ function SimpleJSSynth(dest, opts){
 		silent = 0;
 	};
 
-	gain.destroy = function(){
+	my.destroy = function(){
 		osc1.stop();
 		osc2.stop();
 		osc3.stop();
-		gain.disconnect();
+		my.disconnect();
 	};
 
-	return gain;
+	return my;
 }
 
 if (typeof window !== 'undefined')

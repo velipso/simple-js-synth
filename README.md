@@ -35,6 +35,9 @@ var node = SimpleJSSynth(
     attack  : 0 to inf,      // attack time (seconds)
     decay   : 0 to inf,      // decay time (seconds)
     sustain : 0 to 1         // sustain (fraction of max vol)
+
+    // filter
+    cutoff  : 0,             // lowpass cutoff (relative semitones to root)
   }
 );
 ```
