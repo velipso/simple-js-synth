@@ -16,6 +16,7 @@ function SimpleJSSynth(dest, opts){
 	//   attack   : 0 to inf,                              // attack time (seconds)
 	//   decay    : 0 to inf,                              // decay time (seconds)
 	//   sustain  : 0 to 1,                                // sustain (fraction of max vol)
+	//   susdecay : 0 to inf,                              // decay during sustain (seconds)
 	//   cutoff   : -inf to inf                            // filter cutoff (relative semitones)
 	// }
 
@@ -71,9 +72,10 @@ function SimpleJSSynth(dest, opts){
 	var tune3 = calctune(opts.osc3tune);
 	var cutoff = calctune(opts.cutoff);
 
-	var attack  = typeof opts.attack  == 'number' ? opts.attack  : 0.1;
-	var decay   = typeof opts.decay   == 'number' ? opts.decay   : 0.2;
-	var sustain = typeof opts.sustain == 'number' ? opts.sustain : 0.5;
+	var attack   = typeof opts.attack   == 'number' ? opts.attack   : 0.1;
+	var decay    = typeof opts.decay    == 'number' ? opts.decay    : 0.2;
+	var sustain  = typeof opts.sustain  == 'number' ? opts.sustain  : 0.5;
+	var susdecay = typeof opts.susdecay == 'number' ? opts.susdecay : 10;
 
 	// clamp the values a bit
 	var eps = 0.001;
@@ -107,9 +109,12 @@ function SimpleJSSynth(dest, opts){
 		var v = gain.gain.value;
 		gain.gain.cancelScheduledValues(now);
 		gain.gain.setValueAtTime(v, now);
-		gain.gain.linearRampToValueAtTime(1, now + attack);
-		gain.gain.linearRampToValueAtTime(sustain, now + attack + decay * (1 - sustain));
-		silent = -1;
+		var hitpeak = now + attack;
+		var hitsus = hitpeak + decay * (1 - sustain);
+		silent = hitsus + susdecay;
+		gain.gain.linearRampToValueAtTime(1, hitpeak);
+		gain.gain.linearRampToValueAtTime(sustain, hitsus);
+		gain.gain.linearRampToValueAtTime(0.000001, silent);
 	};
 
 	my.bend = function(semitones){

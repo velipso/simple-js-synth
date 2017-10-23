@@ -9,8 +9,9 @@ Project Home: https://github.com/voidqk/simple-js-synth
 	<title>Simple JS Synth [demo]</title>
 	<style>
 html, body { font-family: sans-serif; }
-table {
+table, tr {
 	border-collapse: collapse;
+	padding: 0;
 }
 th, td {
 	padding: 5px;
@@ -21,10 +22,10 @@ pre {
 	text-align: left;
 	margin: 0 10px;
 }
-#osc1vol , #osc2vol , #osc3vol  { width: 120px; }
-#osc1tune, #osc2tune, #osc3tune { width: 280px; }
-#attack  , #decay   , #sustain  { width: 500px; }
-#cutoff                         { width: 400px; }
+#osc1vol , #osc2vol , #osc3vol             { width: 120px; }
+#osc1tune, #osc2tune, #osc3tune            { width: 280px; }
+#attack  , #decay   , #sustain , #susdecay { width: 500px; }
+#cutoff                                    { width: 400px; }
 	</style>
 	<script src="./simple-js-synth.js"></script>
 </head>
@@ -86,6 +87,13 @@ pre {
 				<th>Sustain</th>
 				<td colspan="3">0 <input type="range" min="0" max="100" value="50" id="sustain" /> 1</td>
 			</tr>
+			<tr>
+				<th>Sus. Decay</th>
+				<td colspan="3">0 <input type="range" min="0" max="100" value="10" id="susdecay" /> 10</td>
+			</tr>
+			<tr>
+				<td colspan="4" style="padding: 0; line-height: 0;"><canvas id="env" width="1440" height="200" style="width: 720px; height: 100px;"></canvas></td>
+			</tr>
 			<tr style="border-top: 2px solid #777;">
 				<th id="cutoff_txt">Cutoff</th>
 				<td><select id="filter">
@@ -135,6 +143,7 @@ function reload(){
 		attack  : getnum('attack', 100),
 		decay   : getnum('decay', 100),
 		sustain : getnum('sustain', 100),
+		susdecay: getnum('susdecay', 10),
 		cutoff  : docutoff ? getnum('cutoff', 10) : 1000
 	};
 
@@ -152,6 +161,7 @@ function reload(){
 		lastopts.attack   === opts.attack   &&
 		lastopts.decay    === opts.decay    &&
 		lastopts.sustain  === opts.sustain  &&
+		lastopts.susdecay === opts.susdecay &&
 		lastopts.cutoff   === opts.cutoff)
 		return;
 
@@ -161,6 +171,49 @@ function reload(){
 	// change UI to reflect whether cutoff is enabled
 	document.getElementById('cutoff_txt').style.color = docutoff ? '#000' : '#999';
 	document.getElementById('cutoff').disabled = !docutoff;
+
+	// draw the envelope
+	(function(){
+		var cnv = document.getElementById('env');
+		var ctx = cnv.getContext('2d');
+		var pps = 150; // pixels per second
+		var attack_x = opts.attack * pps;
+		var sustain_x = attack_x + (1 - opts.sustain) * opts.decay * pps;
+		var sustain_y = (1 - opts.sustain) * cnv.height;
+		var endsus_x = sustain_x + (opts.susdecay * 0.5) * pps;
+		var endsus_y = (1 - opts.sustain * 0.5) * cnv.height;
+		var decay_x = endsus_x + opts.sustain * 0.5 * opts.decay * pps;
+		ctx.fillStyle = '#fff';
+		ctx.fillRect(0, 0, cnv.width, cnv.height);
+		ctx.fillStyle = '#eee';
+		ctx.fillRect(endsus_x, 0, cnv.width, cnv.height);
+		ctx.beginPath();
+		ctx.moveTo(0, cnv.height);
+		ctx.lineTo(attack_x, 0);
+		ctx.lineTo(sustain_x, sustain_y);
+		ctx.lineTo(endsus_x, endsus_y);
+		ctx.lineTo(decay_x, cnv.height);
+		ctx.strokeStyle = '#000';
+		ctx.setLineDash([]);
+		ctx.lineWidth = 4;
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.moveTo(attack_x, 0);
+		ctx.lineTo(attack_x, cnv.height);
+		ctx.moveTo(sustain_x, 0);
+		ctx.lineTo(sustain_x, cnv.height);
+		ctx.moveTo(endsus_x, 0);
+		ctx.lineTo(endsus_x, cnv.height);
+		ctx.setLineDash([5, 5]);
+		ctx.lineWidth = 2;
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.arc(sustain_x, sustain_y, 10, 0, Math.PI * 2);
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.arc(endsus_x, endsus_y, 10, 0, Math.PI * 2);
+		ctx.stroke();
+	})();
 
 	// destroy all synths currently in the pool
 	while (pool.length > 0)
