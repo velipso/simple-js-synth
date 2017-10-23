@@ -229,7 +229,7 @@ function reload(){
 
 // attach update events to reload
 (['osc1type', 'osc1vol', 'osc1tune', 'osc2type', 'osc2vol', 'osc2tune', 'osc3type', 'osc3vol',
-	'osc3tune', 'attack', 'decay', 'sustain', 'filter', 'cutoff']).forEach(function(id){
+	'osc3tune', 'attack', 'decay', 'sustain', 'susdecay', 'filter', 'cutoff']).forEach(function(id){
 	document.getElementById(id).addEventListener('change', reload);
 });
 
