@@ -371,6 +371,11 @@ for (var i = 0; i < 48; i++){
 		div.addEventListener('touchstart', mousedown);
 		div.addEventListener('touchend', mouseup);
 		div.addEventListener('touchleave', mouseup);
+		div.addEventListener('selectstart', cancel);
+		div.unselectable = 'on';
+		div.style.mozUserSelect = 'none';
+		div.style.webkitUserSelect = 'none';
+		div.style.userSelect = 'none';
 	})(document.createElement('div'), i);
 }
 	</script>
