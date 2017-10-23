@@ -22,6 +22,9 @@ pre {
 	text-align: left;
 	margin: 0 10px;
 }
+#attack, #decay, #sustain {
+	width: 380px;
+}
 	</style>
 	<script src="./simple-js-synth.js"></script>
 </head>
@@ -72,16 +75,16 @@ pre {
 				<th colspan="4">Envelope</th>
 			</tr>
 			<tr>
-				<th colspan="2">Attack</th>
-				<td colspan="2">0 <input type="range" min="0" max="500" value="0" id="attack" /> 5</td>
+				<th>Attack</th>
+				<td colspan="3">0 <input type="range" min="0" max="500" value="0" id="attack" /> 5</td>
 			</tr>
 			<tr>
-				<th colspan="2">Decay</th>
-				<td colspan="2">0 <input type="range" min="0" max="500" value="30" id="decay" /> 5</td>
+				<th>Decay</th>
+				<td colspan="3">0 <input type="range" min="0" max="500" value="30" id="decay" /> 5</td>
 			</tr>
 			<tr>
-				<th colspan="2">Sustain</th>
-				<td colspan="2">0 <input type="range" min="0" max="100" value="50" id="sustain" /> 1</td>
+				<th>Sustain</th>
+				<td colspan="3">0 <input type="range" min="0" max="100" value="50" id="sustain" /> 1</td>
 			</tr>
 		</tbody>
 	</table>
