@@ -367,6 +367,10 @@ for (var i = 0; i < 48; i++){
 		div.addEventListener('mousedown', mousedown);
 		div.addEventListener('mouseup', mouseup);
 		div.addEventListener('mouseout', mouseup);
+		div.addEventListener('touchmove', cancel);
+		div.addEventListener('touchstart', mousedown);
+		div.addEventListener('touchend', mouseup);
+		div.addEventListener('touchleave', mouseup);
 	})(document.createElement('div'), i);
 }
 	</script>
