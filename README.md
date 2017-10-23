@@ -5,6 +5,14 @@ Simple JavaScript synthesizer using Web Audio.
 
 [Play with the demo.](https://rawgit.com/voidqk/simple-js-synth/master/demo.html)
 
+Design
+------
+
+![Design](https://github.com/voidqk/simple-js-synth/raw/master/design.png)
+
+There are three oscillators which output to a basic attack/decay/sustain envelope, followed by an
+optional lowpass filter.
+
 Usage
 -----
 
