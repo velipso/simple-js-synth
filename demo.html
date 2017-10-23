@@ -176,12 +176,12 @@ function reload(){
 	(function(){
 		var cnv = document.getElementById('env');
 		var ctx = cnv.getContext('2d');
-		var pps = 150; // pixels per second
+		var pps = 170; // pixels per second
 		var attack_x = opts.attack * pps;
 		var sustain_x = attack_x + (1 - opts.sustain) * opts.decay * pps;
 		var sustain_y = (1 - opts.sustain) * cnv.height;
-		var endsus_x = sustain_x + (opts.susdecay * 0.5) * pps;
-		var endsus_y = (1 - opts.sustain * 0.5) * cnv.height;
+		var endsus_x = sustain_x + 2 * pps;
+		var endsus_y = (1 - opts.sustain * (1 - 2 / Math.max(opts.susdecay, 0.001))) * cnv.height;
 		var decay_x = endsus_x + opts.sustain * 0.5 * opts.decay * pps;
 		ctx.fillStyle = '#fff';
 		ctx.fillRect(0, 0, cnv.width, cnv.height);
