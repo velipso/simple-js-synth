@@ -56,6 +56,9 @@ node.isSilent();
 
 // stop all sound immediately
 node.stop();
+
+// destroy a synth permanently (disconnect and stop all sound)
+node.destroy();
 ```
 
 Example

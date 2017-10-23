@@ -128,6 +128,13 @@ function SimpleJSSynth(dest, opts){
 		silent = 0;
 	};
 
+	gain.destroy = function(){
+		osc1.stop();
+		osc2.stop();
+		osc3.stop();
+		gain.disconnect();
+	};
+
 	return gain;
 }
 

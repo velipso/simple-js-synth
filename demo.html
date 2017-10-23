@@ -148,11 +148,8 @@ function reload(){
 	document.getElementById('raw').innerHTML = JSON.stringify(opts, null, 3);
 
 	// destroy all synths currently in the pool
-	while (pool.length > 0){
-		var s = pool.pop();
-		s.stop();       // stop any playing sound
-		s.disconnect(); // disconnect from the destination
-	}
+	while (pool.length > 0)
+		pool.pop().destroy(); // pop a synth and destroy it
 
 	// recreate the pool based on the new options
 	for (var i = 0; i < 20; i++)
