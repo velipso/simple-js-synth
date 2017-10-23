@@ -88,6 +88,7 @@ pre {
 	<br />
 	<script>
 
+// create our WebAudio context
 var AudioContext = window.AudioContext || window.webkitAudioContext;
 var actx = new AudioContext();
 
@@ -124,7 +125,7 @@ function reload(){
 		sustain : getnum('sustain', 100)
 	};
 
-	// if it hasn't changed from before, then return
+	// if our options haven't changed from before, then return immediately
 	if (lastopts !== null &&
 		lastopts.osc1type === opts.osc1type &&
 		lastopts.osc1vol  === opts.osc1vol  &&
@@ -140,13 +141,14 @@ function reload(){
 		lastopts.sustain  === opts.sustain)
 		return;
 
+	// output JSON object to UI
 	document.getElementById('raw').innerHTML = JSON.stringify(opts, null, 3);
 
-	// flush the pool
+	// destroy all synths currently in the pool
 	while (pool.length > 0){
 		var s = pool.pop();
-		s.stop();
-		s.disconnect();
+		s.stop();       // stop any playing sound
+		s.disconnect(); // disconnect from the destination
 	}
 
 	// recreate the pool based on the new options
@@ -156,8 +158,6 @@ function reload(){
 	// save the options for later comparison
 	lastopts = opts;
 }
-
-reload();
 
 // attach update events to reload
 (['osc1type', 'osc1vol', 'osc1tune', 'osc2type', 'osc2vol', 'osc2tune', 'osc3type', 'osc3vol',
@@ -169,31 +169,18 @@ reload();
 setInterval(reload, 200);
 
 // fired when a note is hit, either via the UI, or via MIDI
-function notehit(freq, vol){
-	var p = -1;
-	for (p = 0; p < pool.length; p++){
+function noteHit(freq, vol){
+	for (var i = 0; i < pool.length; i++){
 		// search the pool of synths for a silent synth
-		if (pool[p].isSilent()){
-			// trigger the synth and return an object for manipulating it
-			pool[p].noteOn(freq, vol);
-			return {
-				off: function(){
-					if (p < 0)
-						return;
-					pool[p].noteOff();
-					p = -1;
-				},
-				bend: function(amt){
-					if (p < 0)
-						return;
-					pool[p].bend(amt);
-				}
-			};
+		if (pool[i].isSilent()){
+			// trigger and return the synth
+			pool[i].noteOn(freq, vol);
+			return pool[i];
 		}
 	}
 	// no synths available, so don't do anything, and return a junk object
 	return {
-		off: function(){},
+		noteOff: function(){},
 		bend: function(){}
 	};
 }
@@ -204,15 +191,17 @@ for (var i = 0; i < 128; i++)
 	mididown.push(false);
 
 // called when a note is hit or released via UI or MIDI
-function midihit(note, vel, down){
+function midiHit(note, vel, down){
 	// silence the note
 	if (mididown[note]){
-		mididown[note].off();
+		mididown[note].noteOff();
 		mididown[note] = false;
 	}
 	// if we're pressing down, play the note
 	if (down){
-		mididown[note] = notehit(440 * Math.pow(2, (note - 69) / 12), vel / 127);
+		var freq = 440 * Math.pow(2, (note - 69) / 12); // convert note to frequency
+		var vol  = vel / 127;                           // convert velocity to volume
+		mididown[note] = noteHit(freq, vol);
 		// if we have a global bend, apply it immediately
 		if (globalbend != 0)
 			mididown[note].bend(globalbend);
@@ -223,7 +212,7 @@ function midihit(note, vel, down){
 }
 
 // called when MIDI sends a bend message
-function midibend(amt){
+function midiBend(amt){
 	// set the global bend of +-2 semitones
 	globalbend = amt * 2;
 
@@ -235,41 +224,41 @@ function midibend(amt){
 }
 
 // called when MIDI has initialized
-function midiinit(midi){
-	function midihook(){
+function midiInit(midi){
+	function midiHook(){
 		var inputs = midi.inputs.values();
 		for (var input = inputs.next(); input && !input.done; input = inputs.next())
-			input.value.onmidimessage = midiev;
+			input.value.onmidimessage = midiEvent;
 	}
-	midihook();
-	midi.onstatechange = midihook;
+	midiHook();
+	midi.onstatechange = midiHook;
 }
 
 // called when MIDI fails to initialize... don't do anything
-function midirej(){
+function midiReject(){
 	console.warn('MIDI failed to initialize... oh well');
 }
 
 // called when a MIDI message is received
-function midiev(ev){
+function midiEvent(ev){
 	if (ev.data.length < 2)
 		return;
 	// look for note on, note off, and pitch bend messages
 	if ((ev.data[0] & 0xF0) == 0x90)
-		midihit(ev.data[1], ev.data[2], true);
+		midiHit(ev.data[1], ev.data[2], true);
 	else if ((ev.data[0] & 0xF0) == 0x80)
-		midihit(ev.data[1], 0, false);
+		midiHit(ev.data[1], 0, false);
 	else if ((ev.data[0] & 0xF0) == 0xE0){
 		if (ev.data[1] == 0 && ev.data[2] == 0x40)
-			midibend(0);
+			midiBend(0);
 		else
-			midibend((ev.data[1] | (ev.data[2] << 7)) * 2 / 0x3FFF - 1);
+			midiBend((ev.data[1] | (ev.data[2] << 7)) * 2 / 0x3FFF - 1);
 	}
 }
 
 // request MIDI access
 if (navigator.requestMIDIAccess)
-	navigator.requestMIDIAccess().then(midiinit, midirej);
+	navigator.requestMIDIAccess().then(midiInit, midiReject);
 
 // create our 48 divs for the user to click
 var divs = [];
@@ -298,12 +287,12 @@ for (var i = 0; i < 48; i++){
 		}
 		function mousedown(e){
 			// if the mouse is pressed, simulate a MIDI note on
-			midihit(36 + i, 100, true);
+			midiHit(36 + i, 100, true);
 			return cancel(e);
 		}
 		function mouseup(e){
 			// if the mouse is released, simulate a MIDI note off
-			midihit(36 + i, 0, false);
+			midiHit(36 + i, 0, false);
 			return cancel(e);
 		}
 		div.addEventListener('mousemove', cancel);
