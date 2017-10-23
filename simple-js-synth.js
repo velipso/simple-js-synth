@@ -85,6 +85,8 @@ function SimpleJSSynth(dest, opts){
 		decay = eps;
 	if (sustain < eps)
 		sustain = eps;
+	if (susdecay < eps)
+		susdecay = eps;
 
 	var basefreq = 0;
 	var silent = 0;
