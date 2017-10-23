@@ -125,7 +125,7 @@ function SimpleJSSynth(dest, opts){
 		var v = gain.gain.value;
 		gain.gain.cancelScheduledValues(now);
 		gain.gain.setValueAtTime(v, now);
-		silent = now + decay * sustain;
+		silent = now + decay * v;
 		gain.gain.linearRampToValueAtTime(0.000001, silent);
 	};
 
