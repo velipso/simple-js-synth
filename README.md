@@ -13,28 +13,28 @@ destination with the given synth options:
 
 ```javascript
 var node = SimpleJSSynth(
-	audioContext.destination,                                   // the destination
-	{
-		// oscillator 1
-		osc1type: 'sine' | 'square' | 'sawtooth' | 'triangle',  // type of wave
-		osc1vol : 0 to 1,                                       // oscillator volume (linear)
-		osc1tune: 0,                                            // relative tuning (semitones)
+  audioContext.destination,                                   // the destination
+  {
+    // oscillator 1
+    osc1type: 'sine' | 'square' | 'sawtooth' | 'triangle',  // type of wave
+    osc1vol : 0 to 1,                                       // oscillator volume (linear)
+    osc1tune: 0,                                            // relative tuning (semitones)
 
-		// oscillator 2
-		osc2type: 'sine' | 'square' | 'sawtooth' | 'triangle',  // type of wave
-		osc2vol : 0 to 1,                                       // oscillator volume (linear)
-		osc2tune: 0,                                            // relative tuning (semitones)
+    // oscillator 2
+    osc2type: 'sine' | 'square' | 'sawtooth' | 'triangle',  // type of wave
+    osc2vol : 0 to 1,                                       // oscillator volume (linear)
+    osc2tune: 0,                                            // relative tuning (semitones)
 
-		// oscillator 3
-		osc3type: 'sine' | 'square' | 'sawtooth' | 'triangle',  // type of wave
-		osc3vol : 0 to 1,                                       // oscillator volume (linear)
-		osc3tune: 0,                                            // relative tuning (semitones)
+    // oscillator 3
+    osc3type: 'sine' | 'square' | 'sawtooth' | 'triangle',  // type of wave
+    osc3vol : 0 to 1,                                       // oscillator volume (linear)
+    osc3tune: 0,                                            // relative tuning (semitones)
 
-		// envelope
-		attack  : 0 to inf,                                     // attack time (seconds)
-		decay   : 0 to inf,                                     // decay time (seconds)
-		sustain : 0 to 1                                        // sustain (fraction of max vol)
-	}
+    // envelope
+    attack  : 0 to inf,                                     // attack time (seconds)
+    decay   : 0 to inf,                                     // decay time (seconds)
+    sustain : 0 to 1                                        // sustain (fraction of max vol)
+  }
 );
 ```
 
