@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<!--
+(c) Copyright 2016, Sean Connelly (@voidqk), http://syntheti.cc
+MIT License
+Project Home: https://github.com/voidqk/simple-js-synth
+-->
+<head>
+	<title>Simple JS Synth [demo]</title>
+	<style>html, body { font-family: sans-serif; }</style>
+	<script src="./simple-js-synth.js"></script>
+</head>
+<body>
+	<script>
+
+var AudioContext = window.AudioContext || window.webkitAudioContext;
+var actx = new AudioContext();
+
+var pool = [];
+for (var i = 0; i < 20; i++){
+	pool.push(SimpleJSSynth(actx.destination, {
+		osc1type: 'square'  , osc1vol: 1.0, osc1tune: 0,
+		osc2type: 'triangle', osc2vol: 0.7, osc2tune: 0,
+		osc3type: 'sine'    , osc3vol: 0.2, osc3tune: 12,
+		pan: 0,
+		attack: 0.002,
+		decay: 0.2,
+		sustain: 0.5
+	}));
+}
+
+function notehit(freq, vol){
+	var p = -1;
+	for (p = 0; p < pool.length; p++){
+		if (pool[p].isSilent()){
+			pool[p].noteOn(freq, vol);
+			return function(){
+				if (p < 0)
+					return;
+				pool[p].noteOff();
+				p = -1;
+			};
+		}
+	}
+	return function(){};
+}
+
+var mididown = [];
+for (var i = 0; i < 128; i++)
+	mididown.push(false);
+function midihit(note, vel, down){
+	if (mididown[note]){
+		mididown[note]();
+		mididown[note] = false;
+	}
+	if (down)
+		mididown[note] = notehit(440 * Math.pow(2, (note - 69) / 12), vel / 127);
+	if (note >= 60 && note <= 71)
+		divs[note - 60].style.background = down ? '#aaf' : '#eef';
+}
+
+function midiinit(midi){
+	function midihook(){
+		var inputs = midi.inputs.values();
+		for (var input = inputs.next(); input && !input.done; input = inputs.next())
+			input.value.onmidimessage = midiev;
+	}
+	midihook();
+	midi.onstatechange = midihook;
+}
+
+function midirej(){
+}
+
+function midiev(ev){
+	if (ev.data.length < 2)
+		return;
+	if ((ev.data[0] & 0xF0) == 0x90)
+		midihit(ev.data[1], ev.data[2], true);
+	else if ((ev.data[0] & 0xF0) == 0x80)
+		midihit(ev.data[1], 0, false);
+}
+
+if (navigator.requestMIDIAccess)
+	navigator.requestMIDIAccess().then(midiinit, midirej);
+
+var divs = [];
+for (var i = 0; i < 12; i++){
+	(function(div, i){
+		divs.push(div);
+		div.style.display = 'inline-block';
+		div.style.margin = '1px';
+		div.style.padding = '15px';
+		div.style.border = '1px solid #000';
+		div.style.cursor = 'default';
+		div.style.backgroundColor = '#eef';
+		div.appendChild(document.createTextNode(
+			(['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'])[i]));
+		document.body.appendChild(div);
+		var notedone = function(){};
+		function ondown(){
+			div.style.backgroundColor = '#bbf';
+			var freq = 440 * Math.pow(2, (i - 9) / 12);
+			notedone = notehit(freq, 0.8);
+		}
+		function onup(){
+			div.style.backgroundColor = '#eef';
+			notedone();
+		}
+		function mouseup(e){
+			e.preventDefault();
+			e.stopPropagation();
+			onup();
+			return false;
+		}
+		div.addEventListener('mousedown', function(e){
+			e.preventDefault();
+			e.stopPropagation();
+			ondown();
+			return false;
+		});
+		div.addEventListener('mousemove', function(e){
+			e.preventDefault();
+			e.stopPropagation();
+			return false;
+		});
+		div.addEventListener('mouseup', mouseup);
+		div.addEventListener('mouseout', mouseup);
+	})(document.createElement('div'), i);
+}
+
+	</script>
+</body>
+</html>

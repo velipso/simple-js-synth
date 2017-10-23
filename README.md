@@ -1,2 +1,6 @@
-# simple-js-synth
-Simple JavaScript synthesizer using Web Audio
+Simple JS Synth
+===============
+
+Simple JavaScript synthesizer using Web Audio.
+
+
