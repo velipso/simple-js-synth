@@ -63,8 +63,8 @@ node.bend(semitones);
 // turn the note off
 node.noteOff();
 
-// check to see if the synth is silent
-node.isSilent();
+// see if the synth is silent and ready for a new note to play
+node.isReady();
 
 // stop all sound immediately
 node.stop();

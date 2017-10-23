@@ -90,6 +90,7 @@ function SimpleJSSynth(dest, opts){
 
 	var basefreq = 0;
 	var silent = 0;
+	var ndown = false;
 
 	osc1.start();
 	osc2.start();
@@ -98,7 +99,7 @@ function SimpleJSSynth(dest, opts){
 	my.connect(dest);
 
 	my.noteOn = function(freq, vol){
-		my.stop();
+		ndown = true;
 		basefreq = freq;
 		var now = ctx.currentTime;
 		osc1.frequency.setValueAtTime(freq * tune1, now);
@@ -128,6 +129,7 @@ function SimpleJSSynth(dest, opts){
 	};
 
 	my.noteOff = function(){
+		ndown = false;
 		var now = ctx.currentTime;
 		var v = gain.gain.value;
 		gain.gain.cancelScheduledValues(now);
@@ -136,11 +138,12 @@ function SimpleJSSynth(dest, opts){
 		gain.gain.linearRampToValueAtTime(0.000001, silent);
 	};
 
-	my.isSilent = function(){
-		return silent >= 0 && ctx.currentTime >= silent;
+	my.isReady = function(){
+		return ctx.currentTime >= silent && !ndown;
 	};
 
 	my.stop = function(){
+		ndown = false;
 		var now = ctx.currentTime;
 		osc1gain.node.gain.setValueAtTime(0.000001, now);
 		osc2gain.node.gain.setValueAtTime(0.000001, now);
@@ -149,6 +152,8 @@ function SimpleJSSynth(dest, opts){
 	};
 
 	my.destroy = function(){
+		ndown = false;
+		silent = 0;
 		osc1.stop();
 		osc2.stop();
 		osc3.stop();

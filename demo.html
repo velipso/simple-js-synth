@@ -239,8 +239,8 @@ setInterval(reload, 200);
 // fired when a note is hit, either via the UI, or via MIDI
 function noteHit(freq, vol){
 	for (var i = 0; i < pool.length; i++){
-		// search the pool of synths for a silent synth
-		if (pool[i].isSilent()){
+		// search the pool of synths that are ready for a new note
+		if (pool[i].isReady()){
 			// trigger and return the synth
 			pool[i].noteOn(freq, vol);
 			return pool[i];
