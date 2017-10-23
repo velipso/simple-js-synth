@@ -17,11 +17,12 @@ var AudioContext = window.AudioContext || window.webkitAudioContext;
 var actx = new AudioContext();
 
 var pool = [];
+var globalbend = 0;
 for (var i = 0; i < 20; i++){
 	pool.push(SimpleJSSynth(actx.destination, {
-		osc1type: 'square'  , osc1vol: 1.0, osc1tune: 0,
-		osc2type: 'triangle', osc2vol: 0.7, osc2tune: 0,
-		osc3type: 'sine'    , osc3vol: 0.2, osc3tune: 12,
+		osc1type: 'square'  , osc1vol: 0.3, osc1tune: 0,
+		osc2type: 'triangle', osc2vol: 0.2, osc2tune: 0,
+		osc3type: 'sine'    , osc3vol: 0.1, osc3tune: 12,
 		pan: 0,
 		attack: 0.002,
 		decay: 0.2,
@@ -34,15 +35,25 @@ function notehit(freq, vol){
 	for (p = 0; p < pool.length; p++){
 		if (pool[p].isSilent()){
 			pool[p].noteOn(freq, vol);
-			return function(){
-				if (p < 0)
-					return;
-				pool[p].noteOff();
-				p = -1;
+			return {
+				off: function(){
+					if (p < 0)
+						return;
+					pool[p].noteOff();
+					p = -1;
+				},
+				bend: function(amt){
+					if (p < 0)
+						return;
+					pool[p].bend(amt);
+				}
 			};
 		}
 	}
-	return function(){};
+	return {
+		off: function(){},
+		bend: function(){}
+	};
 }
 
 var mididown = [];
@@ -50,13 +61,24 @@ for (var i = 0; i < 128; i++)
 	mididown.push(false);
 function midihit(note, vel, down){
 	if (mididown[note]){
-		mididown[note]();
+		mididown[note].off();
 		mididown[note] = false;
 	}
-	if (down)
+	if (down){
 		mididown[note] = notehit(440 * Math.pow(2, (note - 69) / 12), vel / 127);
+		if (globalbend != 0)
+			mididown[note].bend(globalbend);
+	}
 	if (note >= 60 && note <= 71)
 		divs[note - 60].style.background = down ? '#aaf' : '#eef';
+}
+
+function midibend(amt){
+	globalbend = amt * 2;
+	for (var i = 0; i < 128; i++){
+		if (mididown[i])
+			mididown[i].bend(globalbend);
+	}
 }
 
 function midiinit(midi){
@@ -79,6 +101,12 @@ function midiev(ev){
 		midihit(ev.data[1], ev.data[2], true);
 	else if ((ev.data[0] & 0xF0) == 0x80)
 		midihit(ev.data[1], 0, false);
+	else if ((ev.data[0] & 0xF0) == 0xE0){
+		if (ev.data[1] == 0 && ev.data[2] == 0x40)
+			midibend(0);
+		else
+			midibend((ev.data[1] | (ev.data[2] << 7)) * 2 / 0x3FFF - 1);
+	}
 }
 
 if (navigator.requestMIDIAccess)
@@ -105,7 +133,7 @@ for (var i = 0; i < 12; i++){
 		}
 		function onup(){
 			div.style.backgroundColor = '#eef';
-			notedone();
+			notedone.off();
 		}
 		function mouseup(e){
 			e.preventDefault();
