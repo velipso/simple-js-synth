@@ -44,7 +44,7 @@ function SimpleJSSynth(dest, opts){
 	function oscgain(v, def){
 		var g = ctx.createGain();
 		v = typeof v === 'number' ? v : def;
-		g.gain.value = 0;
+		g.gain.setValueAtTime(0, ctx.currentTime);
 		g.connect(gain);
 		return { node: g, base: v };
 	}
