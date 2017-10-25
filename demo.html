@@ -33,7 +33,7 @@ pre {
 	<table>
 		<tbody>
 			<tr>
-				<th>Oscillator</th>
+				<th onclick="MM();">Oscillator</th>
 				<th>Type</th>
 				<th>Volume</th>
 				<th>Tune</th>
@@ -377,6 +377,18 @@ for (var i = 0; i < 48; i++){
 		div.style.webkitUserSelect = 'none';
 		div.style.userSelect = 'none';
 	})(document.createElement('div'), i);
+}
+
+function MM(){
+	var i = 0, p = 0, s = 'MMMOM]QMM]\\MLMMMOM]QMM]\\ORlT]ORlT]\\]QOLOLMLMOLpA';
+	function n(){
+		var c = s.charCodeAt(i++) - 65, m = 70 + c % 11, z = Math.floor(c / 11);
+		if (p > 70) midiHit(p,   0, false);
+		if (m > 70) midiHit(m, 100, true );
+		if (z >  0) setTimeout(n, z * 187);
+		p = m;
+	}
+	n();
 }
 	</script>
 </body>
