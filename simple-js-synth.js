@@ -1,6 +1,6 @@
-// (c) Copyright 2017, Sean Connelly (@voidqk), http://syntheti.cc
+// (c) Copyright 2017, Sean Connelly (@velipso), https://sean.cm
 // MIT License
-// Project Home: https://github.com/voidqk/simple-js-synth
+// Project Home: https://github.com/velipso/simple-js-synth
 
 (function(){
 

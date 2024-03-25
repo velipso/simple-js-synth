@@ -3,12 +3,12 @@ Simple JS Synth
 
 Simple JavaScript synthesizer using Web Audio.
 
-[Play with the demo.](https://rawgit.com/voidqk/simple-js-synth/master/demo.html)
+[Play with the demo.](https://sean.cm/m/simple-js-synth/demo.html)
 
 Design
 ------
 
-![Design](https://github.com/voidqk/simple-js-synth/raw/master/design.png)
+![Design](https://github.com/velipso/simple-js-synth/raw/master/design.png)
 
 There are three oscillators which output to a basic attack/decay/sustain envelope, followed by an
 optional lowpass filter.
@@ -76,5 +76,5 @@ node.destroy();
 Example
 -------
 
-Look at the [source code of the demo](https://github.com/voidqk/simple-js-synth/blob/master/demo.html).
+Look at the [source code of the demo](https://github.com/velipso/simple-js-synth/blob/master/demo.html).
 I've tried to keep it well commented.

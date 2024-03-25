@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en">
 <!--
-(c) Copyright 2016, Sean Connelly (@voidqk), http://syntheti.cc
+(c) Copyright 2016, Sean Connelly (@velipso), https://sean.cm
 MIT License
-Project Home: https://github.com/voidqk/simple-js-synth
+Project Home: https://github.com/velipso/simple-js-synth
 -->
 <head>
 	<title>Simple JS Synth [demo]</title>
@@ -22,6 +22,10 @@ pre {
 	text-align: left;
 	margin: 0 10px;
 }
+button {
+	font-size: 20px;
+	margin: 30px 0;
+}
 #osc1vol , #osc2vol , #osc3vol             { width: 120px; }
 #osc1tune, #osc2tune, #osc3tune            { width: 280px; }
 #attack  , #decay   , #sustain , #susdecay { width: 500px; }
@@ -30,10 +34,14 @@ pre {
 	<script src="./simple-js-synth.js"></script>
 </head>
 <body>
+	<div id="loader">
+		<button type='button' onClick='javascript: loadEverything();'>Play Demo</button>
+	</div>
+	<div id="player" style="display: none;">
 	<table>
 		<tbody>
 			<tr>
-				<th onclick="MM();">Oscillator</th>
+				<th>Oscillator</th>
 				<th>Type</th>
 				<th>Volume</th>
 				<th>Tune</th>
@@ -104,8 +112,14 @@ pre {
 			</tr>
 		</tbody>
 	</table>
+	</div>
 	<br />
 	<script>
+function loadEverything(){
+var divLoader = document.getElementById('loader');
+divLoader.style.display = 'none';
+var divPlayer = document.getElementById('player');
+divPlayer.style.display = '';
 
 // create our WebAudio context
 var AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -332,7 +346,7 @@ if (navigator.requestMIDIAccess)
 var divs = [];
 for (var i = 0; i < 48; i++){
 	if (i == 12 || i == 24 || i == 36)
-		document.body.appendChild(document.createElement('br'));
+		divPlayer.appendChild(document.createElement('br'));
 	(function(div, i){
 		// create the DIV
 		divs.push(div);
@@ -345,7 +359,7 @@ for (var i = 0; i < 48; i++){
 		div.appendChild(document.createTextNode(
 			(['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'])[i % 12] +
 			(Math.floor(i / 12) + 2)));
-		document.body.appendChild(div);
+		divPlayer.appendChild(div);
 
 		// hook mouse events to the DIV
 		function cancel(e){
@@ -390,6 +404,15 @@ function MM(){
 	}
 	n();
 }
+{
+	const btn = document.createElement('button');
+	btn.appendChild(document.createTextNode('MegaMan Demo'));
+	btn.type = 'button';
+	btn.style.display = 'block';
+	btn.addEventListener('click', MM);
+	divPlayer.appendChild(btn);
+}
+} // loadEverything
 	</script>
 </body>
 </html>
