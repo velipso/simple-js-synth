@@ -3,7 +3,7 @@ Simple JS Synth
 
 Simple JavaScript synthesizer using Web Audio.
 
-[Play with the demo.](https://sean.cm/m/simple-js-synth/demo.html)
+[Play with the demo.](https://sean.fun/m/simple-js-synth/demo.html)
 
 Design
 ------

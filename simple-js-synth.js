@@ -1,6 +1,9 @@
-// (c) Copyright 2017, Sean Connelly (@velipso), https://sean.cm
-// MIT License
+//
+// simple-js-synth - Simple JavaScript synthesizer using Web Audio
+// by Sean Connelly (@velipso), https://sean.fun
 // Project Home: https://github.com/velipso/simple-js-synth
+// SPDX-License-Identifier: 0BSD
+//
 
 (function(){
 
